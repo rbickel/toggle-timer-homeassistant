@@ -87,7 +87,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
-    manager: SwitchForTimeManager | None = hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
+    domain_data: dict[str, SwitchForTimeManager] | None = hass.data.get(DOMAIN)
+    manager: SwitchForTimeManager | None = None
+    if domain_data is not None:
+        manager = domain_data.pop(entry.entry_id, None)
     if manager is not None:
         await manager.async_shutdown()
 

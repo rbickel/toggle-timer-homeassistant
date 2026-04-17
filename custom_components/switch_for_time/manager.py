@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.core import HomeAssistant, callback
@@ -212,7 +212,7 @@ class SwitchForTimeManager:
             blocking=True,
         )
 
-    def _schedule_timer(self, entity_id: str, ends_at) -> None:
+    def _schedule_timer(self, entity_id: str, ends_at: datetime) -> None:
         cancel = self._cancel_handles.pop(entity_id, None)
         if cancel:
             cancel()
