@@ -66,6 +66,7 @@ export class SwitchForTimeCardEditor extends LitElement implements LovelaceCardE
 
   private _setConfigValue(configValue: string, value: any): void {
     if (!this._allowedConfigKeys.has(configValue)) {
+      console.warn(`switch-for-time-card-editor: ignoring unsupported config key "${configValue}"`);
       return;
     }
 
@@ -92,14 +93,10 @@ export class SwitchForTimeCardEditor extends LitElement implements LovelaceCardE
       if (domain === 'media_player' && newConfig.action === 'toggle') {
         newConfig.action = 'on';
       }
-    } else if (configValue.includes('.')) {
-      const keys = configValue.split('.');
-      let obj: any = newConfig;
-      for (let i = 0; i < keys.length - 1; i++) {
-        if (!obj[keys[i]]) obj[keys[i]] = {};
-        obj = obj[keys[i]];
-      }
-      obj[keys[keys.length - 1]] = value;
+    } else if (configValue === 'theme.popup_title') {
+      newConfig.theme = { ...(newConfig.theme || {}), popup_title: value };
+    } else if (configValue === 'theme.button_format') {
+      newConfig.theme = { ...(newConfig.theme || {}), button_format: value };
     } else {
       (newConfig as any)[configValue] = value;
     }

@@ -71,7 +71,7 @@ export class SwitchForTimeCard extends LitElement implements LovelaceCard {
       throw new Error(this._localize('editor.durations_max'));
     }
 
-    if (config.durations.some((d) => !Number.isInteger(d) || d <= 0)) {
+    if (config.durations.some((d) => typeof d !== 'number' || !Number.isInteger(d) || d <= 0)) {
       throw new Error(this._localize('editor.durations_positive'));
     }
 

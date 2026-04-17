@@ -456,6 +456,7 @@ automation:
                 ends_at_dt: '{{ strptime(ends_at, "%Y-%m-%dT%H:%M:%S.%f%z") if "." in ends_at else strptime(ends_at, "%Y-%m-%dT%H:%M:%S%z") }}'
                 now_dt: '{{ now() }}'
                 remaining_seconds: '{{ (ends_at_dt - now_dt).total_seconds() }}'
+                remaining_seconds_int: '{{ remaining_seconds | int }}'
 
             # If timer expired, revert immediately
             - if:
@@ -472,4 +473,4 @@ automation:
                   target:
                     entity_id: 'timer.switch_for_time_slot_{{ slot }}'
                   data:
-                    duration: '{{ "%d:%02d:%02d" | format((remaining_seconds | int) // 3600, ((remaining_seconds | int) % 3600) // 60, (remaining_seconds | int) % 60) }}'
+                    duration: '{{ "%d:%02d:%02d" | format(remaining_seconds_int // 3600, (remaining_seconds_int % 3600) // 60, remaining_seconds_int % 60) }}'
