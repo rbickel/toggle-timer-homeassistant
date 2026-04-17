@@ -216,10 +216,12 @@ script:
             target:
               entity_id: 'timer.switch_for_time_slot_{{ slot }}'
 
-          # Remove from state
-          - service: script.switch_for_time_remove_state
+          # Revert immediately on cancel
+          - service: script.switch_for_time_revert
             data:
               entity_id: '{{ entity_id }}'
+              slot: '{{ slot }}'
+              fire_event: false
 
           # Fire event
           - event: switch_for_time_cancelled
@@ -303,6 +305,9 @@ script:
         required: true
       slot:
         required: true
+      fire_event:
+        required: false
+        default: true
     sequence:
       # Get timer info
       - variables:
@@ -350,9 +355,13 @@ script:
           entity_id: '{{ entity_id }}'
 
       # Fire event
-      - event: switch_for_time_finished
-        event_data:
-          entity_id: '{{ entity_id }}'
+      - if:
+          - condition: template
+            value_template: '{{ fire_event }}'
+        then:
+          - event: switch_for_time_finished
+            event_data:
+              entity_id: '{{ entity_id }}'
 
 # ========================================
 # Automations
@@ -447,6 +456,7 @@ automation:
                 ends_at_dt: '{{ strptime(ends_at, "%Y-%m-%dT%H:%M:%S.%f%z") if "." in ends_at else strptime(ends_at, "%Y-%m-%dT%H:%M:%S%z") }}'
                 now_dt: '{{ now() }}'
                 remaining_seconds: '{{ (ends_at_dt - now_dt).total_seconds() }}'
+                remaining_seconds_int: '{{ remaining_seconds | int }}'
 
             # If timer expired, revert immediately
             - if:
@@ -463,4 +473,4 @@ automation:
                   target:
                     entity_id: 'timer.switch_for_time_slot_{{ slot }}'
                   data:
-                    duration: '{{ "%d:%02d:%02d" | format(remaining_seconds // 3600, (remaining_seconds % 3600) // 60, remaining_seconds % 60) }}'
+                    duration: '{{ "%d:%02d:%02d" | format(remaining_seconds_int // 3600, (remaining_seconds_int % 3600) // 60, remaining_seconds_int % 60) }}'

@@ -43,7 +43,9 @@
     "long_press_none": "None",
     "long_press_cancel": "Cancel timer",
     "theme_popup_title": "Popup title template",
-    "theme_button_format": "Button format template"
+    "theme_button_format": "Button format template",
+    "durations_unique": "Durations must be unique integers",
+    "action_invalid_media_player": "Media player only supports on/off actions"
   },
   "popup": {
     "cancel_timer": "Cancel Timer",

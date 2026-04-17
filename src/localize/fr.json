@@ -43,7 +43,9 @@
     "long_press_none": "Aucune",
     "long_press_cancel": "Annuler la minuterie",
     "theme_popup_title": "Modèle de titre de popup",
-    "theme_button_format": "Modèle de format de bouton"
+    "theme_button_format": "Modèle de format de bouton",
+    "durations_unique": "Les durées doivent être des entiers uniques",
+    "action_invalid_media_player": "Media player prend uniquement les actions allumer/éteindre"
   },
   "popup": {
     "cancel_timer": "Annuler la minuterie",
