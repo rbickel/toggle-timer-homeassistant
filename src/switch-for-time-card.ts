@@ -33,9 +33,11 @@ export class SwitchForTimeCard extends LitElement implements LovelaceCard {
   @state() private _customDuration = 30;
   @state() private _remainingSeconds = 0;
   @state() private _popupMode: 'select' | 'active' = 'select';
+  @state() private _confirmCancelPending = false;
 
   private _updateInterval?: number;
-  private _unsubscribeEvents?: () => void;
+  private _unsubscribeEvents: Array<() => void> = [];
+  private _selectionMode: 'start' | 'replace' | 'extend' = 'start';
 
   public static async getConfigElement() {
     return document.createElement('switch-for-time-card-editor');
@@ -69,8 +71,16 @@ export class SwitchForTimeCard extends LitElement implements LovelaceCard {
       throw new Error(this._localize('editor.durations_max'));
     }
 
-    if (config.durations.some((d) => d <= 0)) {
+    if (config.durations.some((d) => !Number.isInteger(d) || d <= 0)) {
       throw new Error(this._localize('editor.durations_positive'));
+    }
+
+    if (new Set(config.durations).size !== config.durations.length) {
+      throw new Error(this._localize('editor.durations_unique'));
+    }
+
+    if (domain === 'media_player' && config.action === 'toggle') {
+      throw new Error(this._localize('editor.action_invalid_media_player'));
     }
 
     this._config = {
@@ -83,6 +93,11 @@ export class SwitchForTimeCard extends LitElement implements LovelaceCard {
       long_press_action: 'cancel',
       ...config,
     };
+
+    if (this.isConnected) {
+      this._subscribeToEvents();
+      this._updateTimerState();
+    }
   }
 
   public getCardSize(): number {
@@ -91,16 +106,16 @@ export class SwitchForTimeCard extends LitElement implements LovelaceCard {
 
   public connectedCallback(): void {
     super.connectedCallback();
-    this._subscribeToEvents();
+    if (this._config?.entity) {
+      this._subscribeToEvents();
+    }
     this._startUpdateLoop();
   }
 
   public disconnectedCallback(): void {
     super.disconnectedCallback();
     this._stopUpdateLoop();
-    if (this._unsubscribeEvents) {
-      this._unsubscribeEvents();
-    }
+    this._unsubscribeFromEvents();
   }
 
   protected updated(changedProps: PropertyValues): void {
@@ -111,46 +126,59 @@ export class SwitchForTimeCard extends LitElement implements LovelaceCard {
   }
 
   private async _subscribeToEvents(): Promise<void> {
-    if (!this.hass) return;
+    if (!this.hass || !this._config?.entity) return;
+
+    this._unsubscribeFromEvents();
 
     try {
-      this._unsubscribeEvents = await this.hass.connection.subscribeEvents(
+      const startedUnsubscribe = await this.hass.connection.subscribeEvents(
         (event: any) => {
           const eventEntity = event.data?.entity_id;
-          if (eventEntity === this._config.entity) {
+          if (eventEntity === this._config?.entity) {
             this._updateTimerState();
           }
         },
         'switch_for_time_started'
       );
+      this._unsubscribeEvents.push(startedUnsubscribe);
 
-      await this.hass.connection.subscribeEvents(
+      const finishedUnsubscribe = await this.hass.connection.subscribeEvents(
         (event: any) => {
           const eventEntity = event.data?.entity_id;
-          if (eventEntity === this._config.entity) {
+          if (eventEntity === this._config?.entity) {
             this._timerState = undefined;
             this._remainingSeconds = 0;
           }
         },
         'switch_for_time_finished'
       );
+      this._unsubscribeEvents.push(finishedUnsubscribe);
 
-      await this.hass.connection.subscribeEvents(
+      const cancelledUnsubscribe = await this.hass.connection.subscribeEvents(
         (event: any) => {
           const eventEntity = event.data?.entity_id;
-          if (eventEntity === this._config.entity) {
+          if (eventEntity === this._config?.entity) {
             this._timerState = undefined;
             this._remainingSeconds = 0;
           }
         },
         'switch_for_time_cancelled'
       );
+      this._unsubscribeEvents.push(cancelledUnsubscribe);
     } catch (err) {
       console.error('Failed to subscribe to events:', err);
     }
   }
 
+  private _unsubscribeFromEvents(): void {
+    for (const unsubscribe of this._unsubscribeEvents) {
+      unsubscribe();
+    }
+    this._unsubscribeEvents = [];
+  }
+
   private _updateTimerState(): void {
+    if (!this._config?.entity) return;
     const stateEntity = this.hass?.states['input_text.switch_for_time_state'];
     if (!stateEntity) return;
 
@@ -200,15 +228,18 @@ export class SwitchForTimeCard extends LitElement implements LovelaceCard {
   }
 
   private _handleTap(): void {
+    this._confirmCancelPending = false;
     if (this._timerState) {
       // Timer is active, show active popup
       this._popupMode = 'active';
       this._showPopup = true;
     } else if (this._config.tap_behavior === 'immediate' && this._config.durations.length > 0) {
       // Immediate mode: start timer with first duration
+      this._selectionMode = 'start';
       this._startTimer(this._config.durations[0]);
     } else {
       // Show selection popup
+      this._selectionMode = 'start';
       this._popupMode = 'select';
       this._showPopup = true;
     }
@@ -217,7 +248,7 @@ export class SwitchForTimeCard extends LitElement implements LovelaceCard {
   private _handleLongPress(): void {
     if (this._config.long_press_action === 'cancel' && this._timerState) {
       if (this._config.confirm_cancel) {
-        // Show confirmation
+        this._confirmCancelPending = true;
         this._popupMode = 'active';
         this._showPopup = true;
       } else {
@@ -246,7 +277,7 @@ export class SwitchForTimeCard extends LitElement implements LovelaceCard {
 
       await this.hass.callService('script', 'switch_for_time', serviceData);
 
-      this._showPopup = false;
+      this._handleClosePopup();
       this._showToast(
         this._localize('card.timer_started').replace('{duration}', durationMinutes.toString())
       );
@@ -261,11 +292,19 @@ export class SwitchForTimeCard extends LitElement implements LovelaceCard {
         entity_id: this._config.entity,
       });
 
-      this._showPopup = false;
+      this._handleClosePopup();
       this._showToast(this._localize('card.timer_cancelled'));
     } catch (err) {
       console.error('Failed to cancel timer:', err);
     }
+  }
+
+  private _handleClosePopup(): void {
+    this._showPopup = false;
+    this._showCustomDuration = false;
+    this._popupMode = 'select';
+    this._selectionMode = 'start';
+    this._confirmCancelPending = false;
   }
 
   private _showToast(message: string): void {
@@ -282,8 +321,11 @@ export class SwitchForTimeCard extends LitElement implements LovelaceCard {
   }
 
   private _localize(key: string): string {
-    const lang = this.hass?.locale?.language || 'en';
-    const translations = TRANSLATIONS[lang] || TRANSLATIONS.en;
+    const rawLang = this.hass?.locale?.language || 'en';
+    const normalizedLang = rawLang.replace('_', '-').toLowerCase();
+    const baseLang = normalizedLang.split('-')[0];
+    const translations =
+      TRANSLATIONS[normalizedLang] || TRANSLATIONS[baseLang] || TRANSLATIONS.en;
 
     const keys = key.split('.');
     let value: any = translations;
@@ -365,11 +407,11 @@ export class SwitchForTimeCard extends LitElement implements LovelaceCard {
 
   private _renderPopup() {
     return html`
-      <div class="popup-overlay" @click=${() => (this._showPopup = false)}>
+      <div class="popup-overlay" @click=${this._handleClosePopup}>
         <div class="popup-content" @click=${(e: Event) => e.stopPropagation()}>
           <div class="popup-header">
             <h3>${this._renderPopupTitle()}</h3>
-            <button class="close-button" @click=${() => (this._showPopup = false)}>×</button>
+            <button class="close-button" @click=${this._handleClosePopup}>×</button>
           </div>
 
           ${this._popupMode === 'active' ? this._renderActivePopup() : this._renderSelectPopup()}
@@ -384,7 +426,10 @@ export class SwitchForTimeCard extends LitElement implements LovelaceCard {
         <div class="duration-buttons">
           ${this._config.durations.map(
             (duration) => html`
-              <button class="duration-button" @click=${() => this._startTimer(duration)}>
+              <button
+                class="duration-button"
+                @click=${() => this._startTimer(duration, this._selectionMode === 'extend')}
+              >
                 ${this._renderButtonLabel(duration)}
               </button>
             `
@@ -405,7 +450,13 @@ export class SwitchForTimeCard extends LitElement implements LovelaceCard {
                           (this._customDuration = parseInt((e.target as HTMLInputElement).value) || 30)}
                         placeholder=${this._localize('card.enter_minutes')}
                       />
-                      <button @click=${() => this._startTimer(this._customDuration)}>
+                      <button
+                        @click=${() =>
+                          this._startTimer(
+                            this._customDuration,
+                            this._selectionMode === 'extend'
+                          )}
+                      >
                         ${this._localize('common.confirm')}
                       </button>
                     `
@@ -421,7 +472,7 @@ export class SwitchForTimeCard extends LitElement implements LovelaceCard {
             `
           : ''}
 
-        <button class="cancel-button" @click=${() => (this._showPopup = false)}>
+        <button class="cancel-button" @click=${this._handleClosePopup}>
           ${this._localize('common.cancel')}
         </button>
       </div>
@@ -431,18 +482,38 @@ export class SwitchForTimeCard extends LitElement implements LovelaceCard {
   private _renderActivePopup() {
     return html`
       <div class="popup-body">
-        <div class="timer-info">
-          <div class="timer-remaining">${this._formatTime(this._remainingSeconds)}</div>
-          <div class="timer-label">${this._localize('card.remaining')}</div>
-        </div>
+        ${this._confirmCancelPending
+          ? html`
+              <div class="timer-info">
+                <div class="timer-label">${this._localize('popup.confirm_cancel_title')}</div>
+                <div class="timer-label">${this._localize('popup.confirm_cancel_message')}</div>
+              </div>
+            `
+          : html`
+              <div class="timer-info">
+                <div class="timer-remaining">${this._formatTime(this._remainingSeconds)}</div>
+                <div class="timer-label">${this._localize('card.remaining')}</div>
+              </div>
+            `}
 
         <div class="action-buttons">
-          <button class="action-button" @click=${this._cancelTimer}>
+          <button
+            class="action-button"
+            @click=${() => {
+              if (this._config.confirm_cancel && !this._confirmCancelPending) {
+                this._confirmCancelPending = true;
+                return;
+              }
+              this._cancelTimer();
+            }}
+          >
             ${this._localize('popup.cancel_timer')}
           </button>
           <button
             class="action-button"
             @click=${() => {
+              this._selectionMode = 'replace';
+              this._confirmCancelPending = false;
               this._popupMode = 'select';
             }}
           >
@@ -451,7 +522,8 @@ export class SwitchForTimeCard extends LitElement implements LovelaceCard {
           <button
             class="action-button"
             @click=${() => {
-              // Switch to extend mode - would need additional logic
+              this._selectionMode = 'extend';
+              this._confirmCancelPending = false;
               this._popupMode = 'select';
             }}
           >

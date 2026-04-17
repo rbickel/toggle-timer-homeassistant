@@ -5,15 +5,92 @@ import type {
   HomeAssistant,
   LovelaceCardEditor,
 } from './types';
-import { SUPPORTED_DOMAINS } from './types';
 
 @customElement('switch-for-time-card-editor')
 export class SwitchForTimeCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: SwitchForTimeCardConfig;
+  @state() private _durationsError?: string;
 
   public setConfig(config: SwitchForTimeCardConfig): void {
     this._config = config;
+  }
+
+  private _parseDurations(rawValue: string): { value?: number[]; error?: string } {
+    const normalized = String(rawValue ?? '').trim();
+    if (!normalized) {
+      return { error: 'Durations must contain 1 to 8 unique positive integers.' };
+    }
+
+    const parts = normalized
+      .split(',')
+      .map((part) => part.trim())
+      .filter((part) => part.length > 0);
+    if (parts.length < 1 || parts.length > 8) {
+      return { error: 'Durations must contain 1 to 8 unique positive integers.' };
+    }
+
+    const durations: number[] = [];
+    const seen = new Set<number>();
+    for (const part of parts) {
+      if (!/^\d+$/.test(part)) {
+        return { error: 'Each duration must be a positive integer.' };
+      }
+
+      const parsed = Number(part);
+      if (!Number.isInteger(parsed) || parsed <= 0) {
+        return { error: 'Each duration must be a positive integer.' };
+      }
+
+      if (seen.has(parsed)) {
+        return { error: 'Durations must be unique.' };
+      }
+
+      seen.add(parsed);
+      durations.push(parsed);
+    }
+
+    return { value: durations };
+  }
+
+  private _setConfigValue(configValue: string, value: any): void {
+    const newConfig = { ...this._config };
+
+    if (configValue === 'durations') {
+      const parsed = this._parseDurations(String(value ?? ''));
+      if (parsed.error) {
+        this._durationsError = parsed.error;
+        return;
+      }
+
+      this._durationsError = undefined;
+      newConfig.durations = parsed.value!;
+    } else if (configValue === 'action') {
+      const domain = (newConfig.entity || '').split('.')[0];
+      if (domain === 'media_player' && value === 'toggle') {
+        return;
+      }
+      newConfig.action = value;
+    } else if (configValue === 'entity') {
+      newConfig.entity = value;
+      const domain = (newConfig.entity || '').split('.')[0];
+      if (domain === 'media_player' && newConfig.action === 'toggle') {
+        newConfig.action = 'on';
+      }
+    } else if (configValue.includes('.')) {
+      const keys = configValue.split('.');
+      let obj: any = newConfig;
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (!obj[keys[i]]) obj[keys[i]] = {};
+        obj = obj[keys[i]];
+      }
+      obj[keys[keys.length - 1]] = value;
+    } else {
+      (newConfig as any)[configValue] = value;
+    }
+
+    this._config = newConfig;
+    this._fireEvent('config-changed', { config: this._config });
   }
 
   private _valueChanged(ev: CustomEvent): void {
@@ -24,30 +101,13 @@ export class SwitchForTimeCardEditor extends LitElement implements LovelaceCardE
     const value = ev.detail?.value ?? target.value;
 
     if (configValue) {
-      const newConfig = { ...this._config };
-
-      if (configValue === 'durations') {
-        // Parse durations from comma-separated string
-        newConfig.durations = value
-          .split(',')
-          .map((d: string) => parseInt(d.trim()))
-          .filter((d: number) => !isNaN(d));
-      } else if (configValue.includes('.')) {
-        // Handle nested properties like theme.popup_title
-        const keys = configValue.split('.');
-        let obj: any = newConfig;
-        for (let i = 0; i < keys.length - 1; i++) {
-          if (!obj[keys[i]]) obj[keys[i]] = {};
-          obj = obj[keys[i]];
-        }
-        obj[keys[keys.length - 1]] = value;
-      } else {
-        (newConfig as any)[configValue] = value;
-      }
-
-      this._config = newConfig;
-      this._fireEvent('config-changed', { config: this._config });
+      this._setConfigValue(configValue, value);
     }
+  }
+
+  private _checkboxChanged(configValue: string, ev: Event): void {
+    const target = ev.target as HTMLInputElement;
+    this._setConfigValue(configValue, target.checked);
   }
 
   private _fireEvent(type: string, detail: any): void {
@@ -65,6 +125,7 @@ export class SwitchForTimeCardEditor extends LitElement implements LovelaceCardE
     }
 
     const durationsString = this._config.durations?.join(', ') || '';
+    const isMediaPlayer = (this._config.entity || '').split('.')[0] === 'media_player';
 
     return html`
       <div class="card-config">
@@ -90,7 +151,7 @@ export class SwitchForTimeCardEditor extends LitElement implements LovelaceCardE
             <select .value=${this._config.action || 'toggle'} .configValue=${'action'} @change=${this._valueChanged}>
               <option value="on">On</option>
               <option value="off">Off</option>
-              <option value="toggle">Toggle</option>
+              ${isMediaPlayer ? '' : html`<option value="toggle">Toggle</option>`}
             </select>
           </label>
         </div>
@@ -123,6 +184,7 @@ export class SwitchForTimeCardEditor extends LitElement implements LovelaceCardE
             />
           </label>
           <div class="hint">Comma-separated list of minutes (1-8 durations)</div>
+          ${this._durationsError ? html`<div class="error">${this._durationsError}</div>` : ''}
         </div>
 
         <div class="option">
@@ -157,14 +219,7 @@ export class SwitchForTimeCardEditor extends LitElement implements LovelaceCardE
               type="checkbox"
               .checked=${this._config.show_remaining ?? true}
               .configValue=${'show_remaining'}
-              @change=${(e: Event) => {
-                const target = e.target as HTMLInputElement;
-                this._valueChanged(
-                  new CustomEvent('change', {
-                    detail: { value: target.checked },
-                  })
-                );
-              }}
+              @change=${(e: Event) => this._checkboxChanged('show_remaining', e)}
             />
             Show remaining time
           </label>
@@ -176,14 +231,7 @@ export class SwitchForTimeCardEditor extends LitElement implements LovelaceCardE
               type="checkbox"
               .checked=${this._config.allow_custom_duration || false}
               .configValue=${'allow_custom_duration'}
-              @change=${(e: Event) => {
-                const target = e.target as HTMLInputElement;
-                this._valueChanged(
-                  new CustomEvent('change', {
-                    detail: { value: target.checked },
-                  })
-                );
-              }}
+              @change=${(e: Event) => this._checkboxChanged('allow_custom_duration', e)}
             />
             Allow custom duration
           </label>
@@ -195,14 +243,7 @@ export class SwitchForTimeCardEditor extends LitElement implements LovelaceCardE
               type="checkbox"
               .checked=${this._config.confirm_cancel || false}
               .configValue=${'confirm_cancel'}
-              @change=${(e: Event) => {
-                const target = e.target as HTMLInputElement;
-                this._valueChanged(
-                  new CustomEvent('change', {
-                    detail: { value: target.checked },
-                  })
-                );
-              }}
+              @change=${(e: Event) => this._checkboxChanged('confirm_cancel', e)}
             />
             Confirm before cancel
           </label>
@@ -321,6 +362,11 @@ export class SwitchForTimeCardEditor extends LitElement implements LovelaceCardE
         font-size: 12px;
         color: var(--secondary-text-color);
         font-style: italic;
+      }
+
+      .error {
+        font-size: 12px;
+        color: var(--error-color, #db4437);
       }
 
       .section-header {

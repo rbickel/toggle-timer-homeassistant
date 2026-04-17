@@ -9,7 +9,7 @@ export default {
   output: {
     file: 'dist/switch-for-time-card.js',
     format: 'es',
-    sourcemap: true,
+    sourcemap: false,
   },
   plugins: [
     json(),
