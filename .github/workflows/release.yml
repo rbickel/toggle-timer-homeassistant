@@ -62,7 +62,7 @@ jobs:
           types = types_path.read_text()
           types = re.sub(
               r"(?P<prefix>export const CARD_VERSION = ')(?P<version>[^']+)(?P<suffix>';)",
-              rf"\g<prefix>{new_version}\g<suffix>",
+              lambda match: f"{match.group('prefix')}{new_version}{match.group('suffix')}",
               types,
               count=1,
           )
@@ -83,7 +83,7 @@ jobs:
           cache: 'npm'
 
       - name: Install npm dependencies
-        run: npm install
+        run: npm ci
 
       - name: Rebuild frontend assets
         run: npm run build
@@ -93,7 +93,13 @@ jobs:
         env:
           VERSION: ${{ steps.bump.outputs.version }}
         run: |
-          git add custom_components/switch_for_time/manifest.json hacs.json package.json src/types.ts dist/switch-for-time-card.js custom_components/switch_for_time/www/switch-for-time-card.js
+          git add \
+            custom_components/switch_for_time/manifest.json \
+            hacs.json \
+            package.json \
+            src/types.ts \
+            dist/switch-for-time-card.js \
+            custom_components/switch_for_time/www/switch-for-time-card.js
           if git diff --cached --quiet; then
             echo "No release changes to commit"
             echo "released=false" >> "$GITHUB_OUTPUT"
