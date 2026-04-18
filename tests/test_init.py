@@ -1,5 +1,5 @@
 """Tests for Switch For Time integration setup."""
-from unittest.mock import AsyncMock, MagicMock, patch, call
+from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
