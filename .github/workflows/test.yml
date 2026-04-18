@@ -28,7 +28,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install npm dependencies
-        run: npm install
+        run: npm ci
 
       - name: Install Python test dependencies
         run: pip install -r requirements_test.txt
