@@ -33,6 +33,7 @@ from .manager import SwitchForTimeManager
 
 PLATFORMS: list[str] = ["sensor"]
 CARD_URL = f"/hacsfiles/{DOMAIN}/switch-for-time-card.js"
+FRONTEND_REGISTERED_KEY = f"{DOMAIN}_frontend_registered"
 
 START_SCHEMA = vol.Schema(
     {
@@ -55,21 +56,13 @@ CANCEL_SCHEMA = vol.Schema({vol.Required(ATTR_ENTITY_ID): cv.entity_id})
 
 async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
     """Set up integration from YAML (unused)."""
+    await _async_register_frontend_resources(hass)
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Switch For Time from a config entry."""
-    # Register the frontend card
-    await hass.http.async_register_static_paths(
-        [
-            {
-                "url": CARD_URL,
-                "path": hass.config.path(f"custom_components/{DOMAIN}/www/switch-for-time-card.js"),
-            }
-        ]
-    )
-    add_extra_js_url(hass, CARD_URL)
+    await _async_register_frontend_resources(hass)
 
     manager = SwitchForTimeManager(hass)
     await manager.async_initialize()
@@ -134,3 +127,20 @@ def _get_manager(hass: HomeAssistant) -> SwitchForTimeManager:
         raise HomeAssistantError("Switch For Time integration is not loaded")
 
     return next(iter(managers.values()))
+
+
+async def _async_register_frontend_resources(hass: HomeAssistant) -> None:
+    """Register frontend card resources once per Home Assistant instance."""
+    if hass.data.get(FRONTEND_REGISTERED_KEY):
+        return
+
+    await hass.http.async_register_static_paths(
+        [
+            {
+                "url": CARD_URL,
+                "path": hass.config.path(f"custom_components/{DOMAIN}/www/switch-for-time-card.js"),
+            }
+        ]
+    )
+    add_extra_js_url(hass, CARD_URL)
+    hass.data[FRONTEND_REGISTERED_KEY] = True
