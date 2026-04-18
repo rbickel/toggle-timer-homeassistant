@@ -247,22 +247,30 @@ export class SwitchForTimePopup extends LitElement {
   }
 
   private _renderSelectPopup() {
+    const durations = Array.isArray(this.config?.durations) ? this.config.durations : [];
+    const allowCustomDuration = Boolean(this.config?.allow_custom_duration);
+    const hasDurationOptions = durations.length > 0;
+
     return html`
       <div class="popup-body">
         <div class="duration-buttons">
-          ${this.config.durations.map(
-            (duration) => html`
-              <button
-                class="duration-button"
-                @click=${() => this._startTimer(duration, this._selectionMode === 'extend')}
-              >
-                ${this._renderButtonLabel(duration)}
-              </button>
-            `
-          )}
+          ${hasDurationOptions
+            ? durations.map(
+                (duration) => html`
+                  <button
+                    class="duration-button"
+                    @click=${() => this._startTimer(duration, this._selectionMode === 'extend')}
+                  >
+                    ${this._renderButtonLabel(duration)}
+                  </button>
+                `
+              )
+            : html`<div class="duration-error">
+                ${this._localize('card.custom_duration')}
+              </div>`}
         </div>
 
-        ${this.config.allow_custom_duration
+        ${allowCustomDuration
           ? html`
               <div class="custom-duration">
                 ${this._showCustomDuration
