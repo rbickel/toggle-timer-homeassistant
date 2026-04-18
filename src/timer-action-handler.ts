@@ -39,13 +39,52 @@ export class SwitchForTimeActionHandler extends LitElement {
 
     // Listen for fire-dom-event from cards
     window.addEventListener('switch-for-time-action', ((event: CustomEvent) => {
-      const { hass, config } = event.detail;
-      if (hass && config) {
-        (window as any).switchForTimeAction(hass, config);
+      const detail = event.detail || {};
+      const config: TimerPopupConfig | undefined = detail.config;
+      if (!config) {
+        console.warn(
+          'switch-for-time-action: missing "config" in event detail'
+        );
+        return;
       }
+      const hass: HomeAssistant | undefined =
+        detail.hass || this._resolveHass(event);
+      if (!hass) {
+        console.warn(
+          'switch-for-time-action: unable to resolve Home Assistant instance'
+        );
+        return;
+      }
+      (window as any).switchForTimeAction(hass, config);
     }) as EventListener);
 
     console.info('Switch For Time: Global timer action handler registered');
+  }
+
+  /**
+   * Best-effort resolution of the active `hass` object when the caller does
+   * not provide it explicitly in the event detail. Walks up from the event
+   * target through composed paths looking for an element exposing `hass`,
+   * and falls back to the `home-assistant` root element.
+   */
+  private _resolveHass(event: Event): HomeAssistant | undefined {
+    const path =
+      typeof (event as any).composedPath === 'function'
+        ? ((event as any).composedPath() as EventTarget[])
+        : [];
+    for (const node of path) {
+      const hass = (node as any)?.hass;
+      if (hass) {
+        return hass as HomeAssistant;
+      }
+    }
+
+    const root = document.querySelector('home-assistant') as any;
+    if (root?.hass) {
+      return root.hass as HomeAssistant;
+    }
+
+    return undefined;
   }
 
   protected render() {

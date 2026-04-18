@@ -75,7 +75,6 @@ tap_action:
   fire_dom_event:
     event: switch-for-time-action
     detail:
-      hass: "{{ hass }}"
       config:
         entity: switch.pool_pump
         durations: [30, 60, 120, 240]
@@ -83,6 +82,8 @@ tap_action:
         revert_to: previous
         allow_custom_duration: true
 ```
+
+The handler automatically resolves the active Home Assistant instance from the event target, so you don't need to pass `hass` in the event detail.
 
 ## Entity Card with Timer Badge
 

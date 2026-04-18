@@ -255,20 +255,22 @@ function t(t,e,i,o){var s,n=arguments.length,r=n<3?e:null===o?o=Object.getOwnPro
           ${"active"===this._popupMode?this._renderActivePopup():this._renderSelectPopup()}
         </div>
       </div>
-    `:B``}_renderSelectPopup(){return B`
+    `:B``}_renderSelectPopup(){const t=Array.isArray(this.config?.durations)?this.config.durations:[],e=Boolean(this.config?.allow_custom_duration),i=t.length>0;return B`
       <div class="popup-body">
         <div class="duration-buttons">
-          ${this.config.durations.map(t=>B`
-              <button
-                class="duration-button"
-                @click=${()=>this._startTimer(t,"extend"===this._selectionMode)}
-              >
-                ${this._renderButtonLabel(t)}
-              </button>
-            `)}
+          ${i?t.map(t=>B`
+                  <button
+                    class="duration-button"
+                    @click=${()=>this._startTimer(t,"extend"===this._selectionMode)}
+                  >
+                    ${this._renderButtonLabel(t)}
+                  </button>
+                `):B`<div class="duration-error">
+                ${this._localize("card.custom_duration")}
+              </div>`}
         </div>
 
-        ${this.config.allow_custom_duration?B`
+        ${e?B`
               <div class="custom-duration">
                 ${this._showCustomDuration?B`
                       <input
@@ -506,7 +508,7 @@ function t(t,e,i,o){var s,n=arguments.length,r=n<3?e:null===o?o=Object.getOwnPro
       .action-button:hover {
         background-color: var(--dark-primary-color, #0277bd);
       }
-    `}};t([pt({attribute:!1})],bt.prototype,"hass",void 0),t([pt({type:Object})],bt.prototype,"config",void 0),t([ut()],bt.prototype,"_timerState",void 0),t([ut()],bt.prototype,"_showCustomDuration",void 0),t([ut()],bt.prototype,"_customDuration",void 0),t([ut()],bt.prototype,"_remainingSeconds",void 0),t([ut()],bt.prototype,"_popupMode",void 0),t([ut()],bt.prototype,"_confirmCancelPending",void 0),t([ut()],bt.prototype,"_visible",void 0),bt=t([lt("switch-for-time-popup")],bt);let yt=class extends at{constructor(){super(...arguments),this._remainingSeconds=0,this._unsubscribeEvents=[]}connectedCallback(){super.connectedCallback(),this._subscribeToEvents(),this._startUpdateLoop(),this._updateTimerState()}disconnectedCallback(){super.disconnectedCallback(),this._stopUpdateLoop(),this._unsubscribeFromEvents()}async _subscribeToEvents(){if(this.hass&&this.entity){this._unsubscribeFromEvents();try{const t=await this.hass.connection.subscribeEvents(t=>{const e=t.data?.entity_id;e===this.entity&&this._updateTimerState()},"switch_for_time_started");this._unsubscribeEvents.push(t);const e=await this.hass.connection.subscribeEvents(t=>{const e=t.data?.entity_id;e===this.entity&&(this._timerState=void 0,this._remainingSeconds=0)},"switch_for_time_finished");this._unsubscribeEvents.push(e);const i=await this.hass.connection.subscribeEvents(t=>{const e=t.data?.entity_id;e===this.entity&&(this._timerState=void 0,this._remainingSeconds=0)},"switch_for_time_cancelled");this._unsubscribeEvents.push(i)}catch(t){console.error("Failed to subscribe to events:",t)}}}_unsubscribeFromEvents(){for(const t of this._unsubscribeEvents)t();this._unsubscribeEvents=[]}_updateTimerState(){if(!this.entity)return;const t=this.hass?.states["input_text.switch_for_time_state"]||this.hass?.states["sensor.switch_for_time_state"];if(t)try{const e=JSON.parse(t.state)[this.entity];e?(this._timerState=e,this._updateRemainingTime()):(this._timerState=void 0,this._remainingSeconds=0)}catch(t){this._timerState=void 0,this._remainingSeconds=0}}_updateRemainingTime(){if(!this._timerState)return void(this._remainingSeconds=0);const t=new Date(this._timerState.ends_at),e=new Date,i=t.getTime()-e.getTime();this._remainingSeconds=Math.max(0,Math.floor(i/1e3))}_startUpdateLoop(){this._updateInterval=window.setInterval(()=>{this._timerState&&this._updateRemainingTime()},1e3)}_stopUpdateLoop(){this._updateInterval&&(clearInterval(this._updateInterval),this._updateInterval=void 0)}_formatTime(t){return`${Math.floor(t/60)}:${(t%60).toString().padStart(2,"0")}`}render(){return this._timerState&&0!==this._remainingSeconds?B`
+    `}};t([pt({attribute:!1})],bt.prototype,"hass",void 0),t([pt({type:Object})],bt.prototype,"config",void 0),t([ut()],bt.prototype,"_timerState",void 0),t([ut()],bt.prototype,"_showCustomDuration",void 0),t([ut()],bt.prototype,"_customDuration",void 0),t([ut()],bt.prototype,"_remainingSeconds",void 0),t([ut()],bt.prototype,"_popupMode",void 0),t([ut()],bt.prototype,"_confirmCancelPending",void 0),t([ut()],bt.prototype,"_visible",void 0),bt=t([lt("switch-for-time-popup")],bt);let yt=class extends at{constructor(){super(...arguments),this._remainingSeconds=0,this._unsubscribeEvents=[]}connectedCallback(){super.connectedCallback(),this._subscribeToEvents(),this._startUpdateLoop(),this._updateTimerState()}updated(t){(t.has("hass")||t.has("entity"))&&this.isConnected&&(this.hass&&this.entity?this._subscribeToEvents():this._unsubscribeFromEvents(),this._updateTimerState())}disconnectedCallback(){super.disconnectedCallback(),this._stopUpdateLoop(),this._unsubscribeFromEvents()}async _subscribeToEvents(){if(this.hass&&this.entity){this._unsubscribeFromEvents();try{const t=await this.hass.connection.subscribeEvents(t=>{const e=t.data?.entity_id;e===this.entity&&this._updateTimerState()},"switch_for_time_started");this._unsubscribeEvents.push(t);const e=await this.hass.connection.subscribeEvents(t=>{const e=t.data?.entity_id;e===this.entity&&(this._timerState=void 0,this._remainingSeconds=0)},"switch_for_time_finished");this._unsubscribeEvents.push(e);const i=await this.hass.connection.subscribeEvents(t=>{const e=t.data?.entity_id;e===this.entity&&(this._timerState=void 0,this._remainingSeconds=0)},"switch_for_time_cancelled");this._unsubscribeEvents.push(i)}catch(t){console.error("Failed to subscribe to events:",t)}}}_unsubscribeFromEvents(){for(const t of this._unsubscribeEvents)t();this._unsubscribeEvents=[]}_updateTimerState(){if(!this.entity)return;const t=this.hass?.states["input_text.switch_for_time_state"]||this.hass?.states["sensor.switch_for_time_state"];if(t)try{const e=JSON.parse(t.state)[this.entity];e?(this._timerState=e,this._updateRemainingTime()):(this._timerState=void 0,this._remainingSeconds=0)}catch(t){this._timerState=void 0,this._remainingSeconds=0}}_updateRemainingTime(){if(!this._timerState)return void(this._remainingSeconds=0);const t=new Date(this._timerState.ends_at),e=new Date,i=t.getTime()-e.getTime();this._remainingSeconds=Math.max(0,Math.floor(i/1e3))}_startUpdateLoop(){this._updateInterval=window.setInterval(()=>{this._timerState&&this._updateRemainingTime()},1e3)}_stopUpdateLoop(){this._updateInterval&&(clearInterval(this._updateInterval),this._updateInterval=void 0)}_formatTime(t){return`${Math.floor(t/60)}:${(t%60).toString().padStart(2,"0")}`}render(){return this._timerState&&0!==this._remainingSeconds?B`
       <div class="timer-badge">
         <ha-icon icon="mdi:timer-outline"></ha-icon>
         <span class="timer-text">${this._formatTime(this._remainingSeconds)}</span>
@@ -540,7 +542,7 @@ function t(t,e,i,o){var s,n=arguments.length,r=n<3?e:null===o?o=Object.getOwnPro
       .timer-text {
         line-height: 1;
       }
-    `}};t([pt({attribute:!1})],yt.prototype,"hass",void 0),t([pt({type:String})],yt.prototype,"entity",void 0),t([ut()],yt.prototype,"_timerState",void 0),t([ut()],yt.prototype,"_remainingSeconds",void 0),yt=t([lt("switch-for-time-badge")],yt),console.info("%c SWITCH-FOR-TIME-ACTION %c Registering global timer action handler ","color: white; background: #0288d1; font-weight: bold;","color: #0288d1; background: white; font-weight: bold;");let $t=class extends at{connectedCallback(){super.connectedCallback(),this._registerGlobalHandler()}_registerGlobalHandler(){window.switchForTimeAction=async(t,e)=>{this._hass=t,this._config=e,this.requestUpdate(),await this.updateComplete;const i=this.shadowRoot?.querySelector("switch-for-time-popup");i&&i.open()},window.addEventListener("switch-for-time-action",t=>{const{hass:e,config:i}=t.detail;e&&i&&window.switchForTimeAction(e,i)}),console.info("Switch For Time: Global timer action handler registered")}render(){return this._hass&&this._config?B`
+    `}};t([pt({attribute:!1})],yt.prototype,"hass",void 0),t([pt({type:String})],yt.prototype,"entity",void 0),t([ut()],yt.prototype,"_timerState",void 0),t([ut()],yt.prototype,"_remainingSeconds",void 0),yt=t([lt("switch-for-time-badge")],yt),console.info("%c SWITCH-FOR-TIME-ACTION %c Registering global timer action handler ","color: white; background: #0288d1; font-weight: bold;","color: #0288d1; background: white; font-weight: bold;");let $t=class extends at{connectedCallback(){super.connectedCallback(),this._registerGlobalHandler()}_registerGlobalHandler(){window.switchForTimeAction=async(t,e)=>{this._hass=t,this._config=e,this.requestUpdate(),await this.updateComplete;const i=this.shadowRoot?.querySelector("switch-for-time-popup");i&&i.open()},window.addEventListener("switch-for-time-action",t=>{const e=t.detail||{},i=e.config;if(!i)return void console.warn('switch-for-time-action: missing "config" in event detail');const o=e.hass||this._resolveHass(t);o?window.switchForTimeAction(o,i):console.warn("switch-for-time-action: unable to resolve Home Assistant instance")}),console.info("Switch For Time: Global timer action handler registered")}_resolveHass(t){const e="function"==typeof t.composedPath?t.composedPath():[];for(const t of e){const e=t?.hass;if(e)return e}const i=document.querySelector("home-assistant");if(i?.hass)return i.hass}render(){return this._hass&&this._config?B`
       <switch-for-time-popup
         .hass=${this._hass}
         .config=${this._config}
