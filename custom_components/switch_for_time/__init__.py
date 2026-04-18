@@ -6,6 +6,7 @@ from typing import Any
 
 import voluptuous as vol
 
+from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -31,6 +32,7 @@ from .const import (
 from .manager import SwitchForTimeManager
 
 PLATFORMS: list[str] = ["sensor"]
+CARD_URL = f"/hacsfiles/{DOMAIN}/switch-for-time-card.js"
 
 START_SCHEMA = vol.Schema(
     {
@@ -62,11 +64,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.http.async_register_static_paths(
         [
             {
-                "url": f"/hacsfiles/switch_for_time/switch-for-time-card.js",
+                "url": CARD_URL,
                 "path": hass.config.path(f"custom_components/{DOMAIN}/www/switch-for-time-card.js"),
             }
         ]
     )
+    add_extra_js_url(hass, CARD_URL)
 
     manager = SwitchForTimeManager(hass)
     await manager.async_initialize()
