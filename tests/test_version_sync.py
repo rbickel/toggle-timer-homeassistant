@@ -39,3 +39,18 @@ def test_built_frontend_assets_log_current_version():
         / "switch-for-time-card.js",
     ):
         assert expected_log in asset_path.read_text()
+
+
+def test_built_frontend_assets_support_lovelace_fire_dom_event():
+    """Generated frontend assets should handle Lovelace fire-dom-event payloads."""
+    for asset_path in (
+        REPO_ROOT / "dist" / "switch-for-time-card.js",
+        REPO_ROOT
+        / "custom_components"
+        / "switch_for_time"
+        / "www"
+        / "switch-for-time-card.js",
+    ):
+        contents = asset_path.read_text()
+        assert 'll-custom' in contents
+        assert 'switch-for-time-action' in contents
