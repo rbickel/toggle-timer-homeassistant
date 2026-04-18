@@ -102,9 +102,34 @@ export class SwitchForTimeActionHandler extends LitElement {
 }
 
 // Auto-register the handler on load
-customElements.whenDefined('switch-for-time-action-handler').then(() => {
+function autoRegisterHandler() {
   if (!document.querySelector('switch-for-time-action-handler')) {
+    console.info('Switch For Time: Creating action handler element');
     const handler = document.createElement('switch-for-time-action-handler');
     document.body.appendChild(handler);
+    console.info('Switch For Time: Action handler element added to DOM');
+  } else {
+    console.info('Switch For Time: Action handler already exists in DOM');
   }
+}
+
+// Try immediate registration
+if (document.body) {
+  customElements.whenDefined('switch-for-time-action-handler').then(autoRegisterHandler);
+} else {
+  // If body not ready, wait for DOMContentLoaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      customElements.whenDefined('switch-for-time-action-handler').then(autoRegisterHandler);
+    });
+  } else {
+    // DOM already loaded
+    customElements.whenDefined('switch-for-time-action-handler').then(autoRegisterHandler);
+  }
+}
+
+// Additional fallback: register when custom element is first defined
+customElements.whenDefined('switch-for-time-action-handler').then(() => {
+  // Give a small delay to ensure DOM is ready
+  setTimeout(autoRegisterHandler, 100);
 });
