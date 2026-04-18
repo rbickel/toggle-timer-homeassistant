@@ -61,8 +61,8 @@ jobs:
           package["version"] = new_version
           types = types_path.read_text()
           types = re.sub(
-              r"(?P<prefix>export const CARD_VERSION = ')(?P<version>[^']+)(?P<suffix>';)",
-              lambda match: f"{match.group('prefix')}{new_version}{match.group('suffix')}",
+              r"export const CARD_VERSION = '[^']+';",
+              f"export const CARD_VERSION = '{new_version}';",
               types,
               count=1,
           )
