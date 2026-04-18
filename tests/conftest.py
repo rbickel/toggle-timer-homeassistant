@@ -1,9 +1,5 @@
 """Fixtures for Switch For Time integration tests."""
-from unittest.mock import MagicMock, patch
 import pytest
-from homeassistant.core import HomeAssistant
-from homeassistant.setup import async_setup_component
-from homeassistant.config_entries import ConfigEntry
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.switch_for_time.const import DOMAIN
