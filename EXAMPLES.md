@@ -27,21 +27,20 @@ entity: switch.shelly_plug_skimmer
 icon: mdi:pool
 vertical: false
 tap_action:
-  action: fire-dom-event
-  browser_mod:
-    service: browser_mod.popup
-    data:
-      title: Timer
-      content:
-        type: custom
-        custom: switch-for-time-popup
-        entity: switch.shelly_plug_skimmer
-        durations:
-          - 10
-          - 20
-          - 30
-        action: toggle
-        revert_to: previous
+  action: call-service
+  service: browser_mod.popup
+  data:
+    title: Timer
+    content:
+      type: custom
+      custom: switch-for-time-popup
+      entity: switch.shelly_plug_skimmer
+      durations:
+        - 10
+        - 20
+        - 30
+      action: toggle
+      revert_to: previous
 ```
 
 ## Simplified Approach with Custom Script
