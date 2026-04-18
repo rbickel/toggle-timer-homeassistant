@@ -209,49 +209,45 @@ async def test_services_call_manager(hass: HomeAssistant, mock_config_entry: Con
         hass.config_entries.async_forward_entry_setups = AsyncMock()
         mock_config_entry.add_to_hass(hass)
 
-        with patch("custom_components.switch_for_time._async_handle_start") as mock_start:
-            mock_start.return_value = None
+        await async_setup_entry(hass, mock_config_entry)
 
-            with patch("custom_components.switch_for_time._async_handle_cancel") as mock_cancel:
-                mock_cancel.return_value = None
+        # Test start service
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_START,
+            {
+                "entity_id": "switch.test",
+                "action": "toggle",
+                "duration_minutes": 5,
+                "revert_to": "previous",
+                "cancel_existing": True,
+            },
+            blocking=True,
+        )
 
-                await async_setup_entry(hass, mock_config_entry)
+        # Verify the manager method was awaited by the real service handler
+        mock_manager.async_start_timer.assert_awaited_once()
+        start_call = mock_manager.async_start_timer.await_args
+        start_data = start_call.args[0] if start_call.args else start_call.kwargs
+        assert start_data["entity_id"] == "switch.test"
+        assert start_data["action"] == "toggle"
+        assert start_data["duration_minutes"] == 5
+        assert start_data["revert_to"] == "previous"
+        assert start_data["cancel_existing"] is True
 
-                # Test start service
-                await hass.services.async_call(
-                    DOMAIN,
-                    SERVICE_START,
-                    {
-                        "entity_id": "switch.test",
-                        "action": "toggle",
-                        "duration_minutes": 5,
-                        "revert_to": "previous",
-                        "cancel_existing": True,
-                    },
-                    blocking=True,
-                )
+        # Test cancel service
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_CANCEL,
+            {"entity_id": "switch.test"},
+            blocking=True,
+        )
 
-                # Verify the service handler was called
-                assert mock_start.call_count == 1
-                call_args = mock_start.call_args
-                assert call_args[0][0] == hass
-                assert call_args[0][1].data["entity_id"] == "switch.test"
-
-                # Test cancel service
-                await hass.services.async_call(
-                    DOMAIN,
-                    SERVICE_CANCEL,
-                    {"entity_id": "switch.test"},
-                    blocking=True,
-                )
-
-                # Verify the service handler was called
-                assert mock_cancel.call_count == 1
-                call_args = mock_cancel.call_args
-                assert call_args[0][0] == hass
-                assert call_args[0][1].data["entity_id"] == "switch.test"
-
-
+        # Verify the manager method was awaited by the real service handler
+        mock_manager.async_cancel_timer.assert_awaited_once()
+        cancel_call = mock_manager.async_cancel_timer.await_args
+        cancel_data = cancel_call.args[0] if cancel_call.args else cancel_call.kwargs
+        assert cancel_data["entity_id"] == "switch.test"
 @pytest.mark.asyncio
 async def test_service_fails_when_integration_not_loaded(hass: HomeAssistant):
     """Test that services fail gracefully when integration is not loaded."""
