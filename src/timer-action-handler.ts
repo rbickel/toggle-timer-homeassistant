@@ -14,13 +14,55 @@ console.info(
 export class SwitchForTimeActionHandler extends LitElement {
   @state() private _hass?: HomeAssistant;
   @state() private _config?: TimerPopupConfig;
+  private _registered = false;
+
+  private readonly _handleTimerActionEvent = (event: Event): void => {
+    const actionRequest = this._extractActionRequest(event);
+    if (!actionRequest) {
+      return;
+    }
+
+    const { config } = actionRequest;
+    if (!config) {
+      console.warn(
+        'switch-for-time-action: missing "config" in event detail'
+      );
+      return;
+    }
+
+    const hass =
+      actionRequest.hass || this._resolveHass(event);
+    if (!hass) {
+      console.warn(
+        'switch-for-time-action: unable to resolve Home Assistant instance'
+      );
+      return;
+    }
+
+    (window as any).switchForTimeAction(hass, config);
+  };
 
   connectedCallback(): void {
     super.connectedCallback();
     this._registerGlobalHandler();
   }
 
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    window.removeEventListener(
+      'switch-for-time-action',
+      this._handleTimerActionEvent
+    );
+    window.removeEventListener('ll-custom', this._handleTimerActionEvent);
+    this._registered = false;
+  }
+
   private _registerGlobalHandler(): void {
+    if (this._registered) {
+      return;
+    }
+    this._registered = true;
+
     // Register global function for tap_action
     (window as any).switchForTimeAction = async (
       hass: HomeAssistant,
@@ -38,27 +80,64 @@ export class SwitchForTimeActionHandler extends LitElement {
     };
 
     // Listen for fire-dom-event from cards
-    window.addEventListener('switch-for-time-action', ((event: CustomEvent) => {
-      const detail = event.detail || {};
-      const config: TimerPopupConfig | undefined = detail.config;
-      if (!config) {
-        console.warn(
-          'switch-for-time-action: missing "config" in event detail'
-        );
-        return;
-      }
-      const hass: HomeAssistant | undefined =
-        detail.hass || this._resolveHass(event);
-      if (!hass) {
-        console.warn(
-          'switch-for-time-action: unable to resolve Home Assistant instance'
-        );
-        return;
-      }
-      (window as any).switchForTimeAction(hass, config);
-    }) as EventListener);
+    window.addEventListener(
+      'switch-for-time-action',
+      this._handleTimerActionEvent
+    );
+    window.addEventListener('ll-custom', this._handleTimerActionEvent);
 
     console.info('Switch For Time: Global timer action handler registered');
+  }
+
+  private _extractActionRequest(
+    event: Event
+  ): { config?: TimerPopupConfig; hass?: HomeAssistant } | undefined {
+    const detail = (event as CustomEvent).detail;
+
+    if (event.type === 'switch-for-time-action') {
+      return this._normalizeActionRequest(detail);
+    }
+
+    if (event.type !== 'll-custom') {
+      return undefined;
+    }
+
+    const fireDomEventDetail =
+      detail?.fire_dom_event?.event === 'switch-for-time-action'
+        ? detail.fire_dom_event.detail
+        : detail?.event === 'switch-for-time-action'
+          ? detail.detail
+          : undefined;
+
+    if (!fireDomEventDetail) {
+      return undefined;
+    }
+
+    return this._normalizeActionRequest(fireDomEventDetail);
+  }
+
+  private _normalizeActionRequest(
+    detail: any
+  ): { config?: TimerPopupConfig; hass?: HomeAssistant } {
+    if (!detail || typeof detail !== 'object') {
+      return {};
+    }
+
+    if (detail.config) {
+      return {
+        config: detail.config as TimerPopupConfig,
+        hass: detail.hass as HomeAssistant | undefined,
+      };
+    }
+
+    if (detail.entity && Array.isArray(detail.durations)) {
+      return {
+        config: detail as TimerPopupConfig,
+        hass: detail.hass as HomeAssistant | undefined,
+      };
+    }
+
+    return {};
   }
 
   /**
