@@ -1,5 +1,4 @@
 """End-to-end integration test for Switch For Time."""
-import os
 from pathlib import Path
 import pytest
 from homeassistant.core import HomeAssistant
