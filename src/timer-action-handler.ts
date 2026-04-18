@@ -26,6 +26,9 @@ type LovelaceCustomEventDetail = {
   detail?: TimerActionRequestDetail;
 };
 
+const VALID_ACTIONS = new Set(['on', 'off', 'toggle']);
+const VALID_REVERT_STATES = new Set(['previous', 'on', 'off', 'none']);
+
 declare global {
   interface Window {
     switchForTimeAction?: (
@@ -170,21 +173,47 @@ export class SwitchForTimeActionHandler extends LitElement {
       return {};
     }
 
-    if ('config' in detail) {
+    if ('config' in detail && this._isValidTimerPopupConfig(detail.config)) {
       return {
-        config: detail.config as TimerPopupConfig,
+        config: detail.config,
         hass: detail.hass as HomeAssistant | undefined,
       };
     }
 
-    if ('entity' in detail && 'durations' in detail && Array.isArray(detail.durations)) {
+    if (this._isValidTimerPopupConfig(detail)) {
       return {
-        config: detail as TimerPopupConfig,
+        config: detail,
         hass: detail.hass as HomeAssistant | undefined,
       };
     }
 
     return {};
+  }
+
+  private _isValidTimerPopupConfig(
+    detail: unknown
+  ): detail is TimerPopupConfig {
+    if (!detail || typeof detail !== 'object') {
+      return false;
+    }
+
+    const config = detail as Partial<TimerPopupConfig>;
+    return (
+      typeof config.entity === 'string' &&
+      config.entity.length > 0 &&
+      Array.isArray(config.durations) &&
+      config.durations.length > 0 &&
+      config.durations.length <= 8 &&
+      config.durations.every(
+        (duration) =>
+          typeof duration === 'number' &&
+          Number.isInteger(duration) &&
+          duration > 0
+      ) &&
+      (config.action === undefined || VALID_ACTIONS.has(config.action)) &&
+      (config.revert_to === undefined ||
+        VALID_REVERT_STATES.has(config.revert_to))
+    );
   }
 
   /**
