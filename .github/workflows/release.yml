@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: ${{ !contains(github.event.head_commit.message, '[skip release]') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version in manifest and HACS metadata
+        id: bump
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest_path = Path("custom_components/switch_for_time/manifest.json")
+          hacs_path = Path("hacs.json")
+
+          manifest = json.loads(manifest_path.read_text())
+          current = manifest["version"]
+          major, minor, patch = current.split(".")
+          new_version = f"{major}.{minor}.{int(patch) + 1}"
+
+          manifest["version"] = new_version
+          hacs = json.loads(hacs_path.read_text())
+          hacs["version"] = new_version
+
+          manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
+          hacs_path.write_text(json.dumps(hacs, indent=2) + "\n")
+
+          with open("$GITHUB_OUTPUT", "a", encoding="utf-8") as output:
+              output.write(f"version={new_version}\n")
+          PY
+
+      - name: Commit and tag release
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          git add custom_components/switch_for_time/manifest.json hacs.json
+          if git diff --cached --quiet; then
+            echo "No release changes to commit"
+            exit 0
+          fi
+          git commit -m "chore(release): v${VERSION} [skip release]"
+          git tag "v${VERSION}"
+          git push
+          git push origin "v${VERSION}"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.bump.outputs.version }}
+          name: v${{ steps.bump.outputs.version }}
+          generate_release_notes: true
