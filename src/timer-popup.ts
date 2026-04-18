@@ -1,6 +1,11 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import type { HomeAssistant, TimerState, TimerStateMap } from './types';
+import type {
+  HomeAssistant,
+  TimerConfigBase,
+  TimerState,
+  TimerStateMap,
+} from './types';
 import enTranslations from './localize/en.json';
 import frTranslations from './localize/fr.json';
 
@@ -9,20 +14,7 @@ const TRANSLATIONS: Record<string, any> = {
   fr: frTranslations,
 };
 
-export interface TimerPopupConfig {
-  entity: string;
-  durations: number[];
-  action?: 'on' | 'off' | 'toggle';
-  revert_to?: 'previous' | 'on' | 'off' | 'none';
-  name?: string;
-  icon?: string;
-  allow_custom_duration?: boolean;
-  confirm_cancel?: boolean;
-  theme?: {
-    popup_title?: string;
-    button_format?: string;
-  };
-}
+export type TimerPopupConfig = TimerConfigBase;
 
 @customElement('switch-for-time-popup')
 export class SwitchForTimePopup extends LitElement {
