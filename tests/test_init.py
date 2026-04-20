@@ -1,4 +1,6 @@
 """Tests for Switch For Time integration setup."""
+import json
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from homeassistant.core import HomeAssistant
@@ -12,6 +14,11 @@ from custom_components.switch_for_time import (
     async_unload_entry,
 )
 from custom_components.switch_for_time.const import DOMAIN, SERVICE_START, SERVICE_CANCEL
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+MANIFEST_VERSION = json.loads(
+    (REPO_ROOT / "custom_components" / "switch_for_time" / "manifest.json").read_text()
+)["version"]
 
 
 @pytest.mark.asyncio
@@ -60,6 +67,31 @@ async def test_async_setup_entry_registers_static_paths(
         assert static_config.url_path == "/hacsfiles/switch_for_time/switch-for-time-card.js"
         assert "switch-for-time-card.js" in static_config.path
         assert static_config.cache_headers is True
+
+
+@pytest.mark.asyncio
+async def test_async_setup_entry_adds_versioned_extra_js(
+    hass: HomeAssistant, mock_config_entry: ConfigEntry
+):
+    """Test that async_setup_entry registers extra JS with cache busting."""
+    hass.http = MagicMock()
+    hass.http.async_register_static_paths = AsyncMock()
+
+    with patch("custom_components.switch_for_time.SwitchForTimeManager") as mock_manager_class:
+        mock_manager = MagicMock()
+        mock_manager.async_initialize = AsyncMock()
+        mock_manager_class.return_value = mock_manager
+
+        hass.config_entries.async_forward_entry_setups = AsyncMock()
+        mock_config_entry.add_to_hass(hass)
+
+        with patch("custom_components.switch_for_time.add_extra_js_url") as mock_add_js:
+            await async_setup_entry(hass, mock_config_entry)
+
+            mock_add_js.assert_called_once()
+            url = mock_add_js.call_args[0][1]
+            assert url.startswith("/hacsfiles/switch_for_time/switch-for-time-card.js")
+            assert f"v={MANIFEST_VERSION}" in url
 
 
 @pytest.mark.asyncio

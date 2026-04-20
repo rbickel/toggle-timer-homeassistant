@@ -73,6 +73,12 @@ export class SwitchForTimeActionHandler extends LitElement {
       return;
     }
 
+    console.info('Switch For Time: Opening timer popup', {
+      entity: config.entity,
+      action: config.action || 'toggle',
+      durations: config.durations,
+    });
+
     void window.switchForTimeAction?.(hass, config);
   };
 
@@ -128,32 +134,18 @@ export class SwitchForTimeActionHandler extends LitElement {
   ): TimerActionRequest | undefined {
     const detail = (event as CustomEvent<TimerActionRequestDetail | LovelaceCustomEventDetail>).detail;
 
-    if (event.type === 'switch-for-time-action') {
-      return this._normalizeActionRequest(
-        this._isLovelaceCustomEventDetail(detail) ? undefined : detail
-      );
-    }
-
-    if (event.type !== 'll-custom') {
-      return undefined;
-    }
-
-    if (!this._isLovelaceCustomEventDetail(detail)) {
-      return undefined;
-    }
-
-    const fireDomEventDetail =
-      detail?.fire_dom_event?.event === 'switch-for-time-action'
-        ? detail.fire_dom_event.detail
-        : detail?.event === 'switch-for-time-action'
-          ? detail.detail
+    const payload =
+      event.type === 'switch-for-time-action'
+        ? this._extractPayload(detail)
+        : event.type === 'll-custom'
+          ? this._extractPayloadFromLovelace(detail)
           : undefined;
 
-    if (!fireDomEventDetail) {
+    if (!payload) {
       return undefined;
     }
 
-    return this._normalizeActionRequest(fireDomEventDetail);
+    return this._normalizeActionRequest(payload);
   }
 
   private _isLovelaceCustomEventDetail(
@@ -164,6 +156,35 @@ export class SwitchForTimeActionHandler extends LitElement {
         typeof detail === 'object' &&
         ('fire_dom_event' in detail || ('event' in detail && 'detail' in detail))
     );
+  }
+
+  private _extractPayload(
+    detail: TimerActionRequestDetail | LovelaceCustomEventDetail
+  ): TimerActionRequestDetail | undefined {
+    if (this._isLovelaceCustomEventDetail(detail)) {
+      return this._extractPayloadFromLovelace(detail);
+    }
+    return detail;
+  }
+
+  private _extractPayloadFromLovelace(
+    detail: LovelaceCustomEventDetail | TimerActionRequestDetail
+  ): TimerActionRequestDetail | undefined {
+    if (!detail || typeof detail !== 'object') {
+      return undefined;
+    }
+
+    const fireDomEvent =
+      'fire_dom_event' in detail ? (detail as LovelaceCustomEventDetail).fire_dom_event : undefined;
+    if (fireDomEvent?.event === 'switch-for-time-action') {
+      return fireDomEvent.detail ?? (fireDomEvent as unknown as TimerActionRequestDetail);
+    }
+
+    if ('event' in detail && detail.event === 'switch-for-time-action') {
+      return detail.detail ?? (detail as TimerActionRequestDetail);
+    }
+
+    return undefined;
   }
 
   private _normalizeActionRequest(
