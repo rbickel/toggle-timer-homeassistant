@@ -51,8 +51,19 @@ export class SwitchForTimeActionHandler extends LitElement {
   private _registered = false;
 
   private readonly _handleTimerActionEvent = (event: Event): void => {
+    console.info(
+      'Switch For Time: Received event',
+      event.type,
+      'with detail:',
+      (event as CustomEvent).detail
+    );
+
     const actionRequest = this._extractActionRequest(event);
     if (!actionRequest) {
+      console.warn(
+        'Switch For Time: Failed to extract action request from event',
+        event.type
+      );
       return;
     }
 
@@ -73,6 +84,10 @@ export class SwitchForTimeActionHandler extends LitElement {
       return;
     }
 
+    console.info(
+      'Switch For Time: Opening popup for entity',
+      config.entity
+    );
     void window.switchForTimeAction?.(hass, config);
   };
 
@@ -85,9 +100,16 @@ export class SwitchForTimeActionHandler extends LitElement {
     super.disconnectedCallback();
     window.removeEventListener(
       'switch-for-time-action',
-      this._handleTimerActionEvent
+      this._handleTimerActionEvent,
+      true
     );
-    window.removeEventListener('ll-custom', this._handleTimerActionEvent);
+    window.removeEventListener('ll-custom', this._handleTimerActionEvent, true);
+    document.removeEventListener(
+      'switch-for-time-action',
+      this._handleTimerActionEvent,
+      true
+    );
+    document.removeEventListener('ll-custom', this._handleTimerActionEvent, true);
     this._registered = false;
   }
 
@@ -114,11 +136,20 @@ export class SwitchForTimeActionHandler extends LitElement {
     };
 
     // Listen for fire-dom-event from cards
+    // Use capture phase to catch events before they might be stopped
     window.addEventListener(
       'switch-for-time-action',
-      this._handleTimerActionEvent
+      this._handleTimerActionEvent,
+      true
     );
-    window.addEventListener('ll-custom', this._handleTimerActionEvent);
+    window.addEventListener('ll-custom', this._handleTimerActionEvent, true);
+    // Also listen on document for events that might not reach window
+    document.addEventListener(
+      'switch-for-time-action',
+      this._handleTimerActionEvent,
+      true
+    );
+    document.addEventListener('ll-custom', this._handleTimerActionEvent, true);
 
     console.info('Switch For Time: Global timer action handler registered');
   }

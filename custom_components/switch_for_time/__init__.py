@@ -33,7 +33,21 @@ from .const import (
 from .manager import SwitchForTimeManager
 
 PLATFORMS: list[str] = ["sensor"]
-CARD_URL = f"/hacsfiles/{DOMAIN}/switch-for-time-card.js"
+
+
+def get_card_url(hass: HomeAssistant) -> str:
+    """Get the card URL with version query parameter for cache-busting."""
+    import json
+
+    manifest_path = hass.config.path(f"custom_components/{DOMAIN}/manifest.json")
+    try:
+        with open(manifest_path) as f:
+            manifest = json.load(f)
+            version = manifest.get("version", "unknown")
+    except Exception:
+        version = "unknown"
+
+    return f"/hacsfiles/{DOMAIN}/switch-for-time-card.js?v={version}"
 
 START_SCHEMA = vol.Schema(
     {
@@ -61,17 +75,23 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Switch For Time from a config entry."""
+    # Get the card URL with version query parameter for cache-busting
+    card_url = get_card_url(hass)
+    # Register the static path without version parameter
+    base_card_url = f"/hacsfiles/{DOMAIN}/switch-for-time-card.js"
+
     # Register the frontend card
     await hass.http.async_register_static_paths(
         [
             StaticPathConfig(
-                url_path=CARD_URL,
+                url_path=base_card_url,
                 path=hass.config.path(f"custom_components/{DOMAIN}/www/switch-for-time-card.js"),
                 cache_headers=True,
             )
         ]
     )
-    add_extra_js_url(hass, CARD_URL)
+    # Use versioned URL for loading to bust cache
+    add_extra_js_url(hass, card_url)
 
     manager = SwitchForTimeManager(hass)
     await manager.async_initialize()
