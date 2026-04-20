@@ -7,6 +7,7 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.exceptions import HomeAssistantError
 
 from custom_components.switch_for_time import (
+    CARD_URL_VERSIONED,
     async_setup,
     async_setup_entry,
     async_unload_entry,
@@ -60,6 +61,31 @@ async def test_async_setup_entry_registers_static_paths(
         assert static_config.url_path == "/hacsfiles/switch_for_time/switch-for-time-card.js"
         assert "switch-for-time-card.js" in static_config.path
         assert static_config.cache_headers is True
+
+
+@pytest.mark.asyncio
+async def test_async_setup_entry_registers_versioned_frontend_resource(
+    hass: HomeAssistant, mock_config_entry: ConfigEntry
+):
+    """Test that async_setup_entry registers the versioned frontend resource URL."""
+    hass.http = MagicMock()
+    hass.http.async_register_static_paths = AsyncMock()
+
+    with (
+        patch("custom_components.switch_for_time.SwitchForTimeManager") as mock_manager_class,
+        patch("custom_components.switch_for_time.add_extra_js_url") as mock_add_extra_js_url,
+    ):
+        mock_manager = MagicMock()
+        mock_manager.async_initialize = AsyncMock()
+        mock_manager_class.return_value = mock_manager
+
+        hass.config_entries.async_forward_entry_setups = AsyncMock()
+        mock_config_entry.add_to_hass(hass)
+
+        result = await async_setup_entry(hass, mock_config_entry)
+
+        assert result is True
+        mock_add_extra_js_url.assert_called_once_with(hass, CARD_URL_VERSIONED)
 
 
 @pytest.mark.asyncio

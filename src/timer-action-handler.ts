@@ -129,9 +129,10 @@ export class SwitchForTimeActionHandler extends LitElement {
     const detail = (event as CustomEvent<TimerActionRequestDetail | LovelaceCustomEventDetail>).detail;
 
     if (event.type === 'switch-for-time-action') {
-      return this._normalizeActionRequest(
-        this._isLovelaceCustomEventDetail(detail) ? undefined : detail
-      );
+      const actionDetail = this._isLovelaceCustomEventDetail(detail)
+        ? this._extractLovelaceActionDetail(detail)
+        : detail;
+      return this._normalizeActionRequest(actionDetail);
     }
 
     if (event.type !== 'll-custom') {
@@ -142,18 +143,27 @@ export class SwitchForTimeActionHandler extends LitElement {
       return undefined;
     }
 
-    const fireDomEventDetail =
-      detail?.fire_dom_event?.event === 'switch-for-time-action'
-        ? detail.fire_dom_event.detail
-        : detail?.event === 'switch-for-time-action'
-          ? detail.detail
-          : undefined;
+    const fireDomEventDetail = this._extractLovelaceActionDetail(detail);
 
     if (!fireDomEventDetail) {
       return undefined;
     }
 
     return this._normalizeActionRequest(fireDomEventDetail);
+  }
+
+  private _extractLovelaceActionDetail(
+    detail: LovelaceCustomEventDetail
+  ): TimerActionRequestDetail {
+    if (detail?.fire_dom_event?.event === 'switch-for-time-action') {
+      return detail.fire_dom_event.detail;
+    }
+
+    if (detail?.event === 'switch-for-time-action') {
+      return detail.detail;
+    }
+
+    return undefined;
   }
 
   private _isLovelaceCustomEventDetail(

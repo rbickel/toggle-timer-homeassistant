@@ -54,3 +54,11 @@ def test_built_frontend_assets_support_lovelace_fire_dom_event():
         contents = asset_path.read_text()
         assert 'll-custom' in contents
         assert 'switch-for-time-action' in contents
+
+
+def test_timer_action_handler_supports_wrapped_switch_for_time_action_event():
+    """Timer action handler should unwrap Lovelace payloads on direct custom events."""
+    source = (REPO_ROOT / "src" / "timer-action-handler.ts").read_text()
+
+    assert "event.type === 'switch-for-time-action'" in source
+    assert '_extractLovelaceActionDetail(detail)' in source

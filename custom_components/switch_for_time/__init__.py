@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
@@ -34,6 +36,10 @@ from .manager import SwitchForTimeManager
 
 PLATFORMS: list[str] = ["sensor"]
 CARD_URL = f"/hacsfiles/{DOMAIN}/switch-for-time-card.js"
+CARD_VERSION = json.loads(
+    Path(__file__).with_name("manifest.json").read_text(encoding="utf-8")
+)["version"]
+CARD_URL_VERSIONED = f"{CARD_URL}?v={CARD_VERSION}"
 
 START_SCHEMA = vol.Schema(
     {
@@ -71,7 +77,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             )
         ]
     )
-    add_extra_js_url(hass, CARD_URL)
+    add_extra_js_url(hass, CARD_URL_VERSIONED)
 
     manager = SwitchForTimeManager(hass)
     await manager.async_initialize()
