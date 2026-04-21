@@ -1,6 +1,6 @@
 # Timer Action Examples
 
-This document provides examples of using the Switch For Time timer action with standard Home Assistant cards.
+This document provides examples of using the Toggle Timer timer action with standard Home Assistant cards.
 
 ## Overview
 
@@ -220,17 +220,17 @@ elements:
 1. **Check Browser Console**: Open browser DevTools (F12) and look for these messages:
    - `TOGGLE-TIMER-CARD <current version>` - Main card loaded
    - `TOGGLE-TIMER-ACTION Registering global timer action handler` - Action handler starting
-   - `Switch For Time: Creating action handler element` - Handler being created
-   - `Switch For Time: Action handler element added to DOM` - Handler successfully registered
-   - `Switch For Time: Global timer action handler registered` - Event listener active
+   - `Toggle Timer: Creating action handler element` - Handler being created
+   - `Toggle Timer: Action handler element added to DOM` - Handler successfully registered
+   - `Toggle Timer: Global timer action handler registered` - Event listener active
 
 2. If you only see `TOGGLE-TIMER-CARD` but not the action handler messages:
    - Restart Home Assistant completely
    - Clear browser cache and hard refresh (Ctrl+Shift+R or Cmd+Shift+R)
-   - Check that the Switch For Time integration is installed and configured in Settings → Devices & Services
+   - Check that the Toggle Timer integration is installed and configured in Settings → Devices & Services
 
-3. Ensure the Switch For Time integration is installed and configured
-4. Verify the frontend JavaScript is loaded at `/hacsfiles/switch_for_time/toggle-timer-card.js`
+3. Ensure the Toggle Timer integration is installed and configured
+4. Verify the frontend JavaScript is loaded at `/hacsfiles/toggle_timer/toggle-timer-card.js`
 
 ### Badge doesn't show
 

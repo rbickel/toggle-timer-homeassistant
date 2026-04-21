@@ -6,7 +6,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_VERSION = json.loads(
-    (REPO_ROOT / "custom_components" / "switch_for_time" / "manifest.json").read_text()
+    (REPO_ROOT / "custom_components" / "toggle_timer" / "manifest.json").read_text()
 )["version"]
 
 
@@ -32,7 +32,7 @@ def test_built_frontend_assets_log_current_version():
         REPO_ROOT / "dist" / "toggle-timer-card.js",
         REPO_ROOT
         / "custom_components"
-        / "switch_for_time"
+        / "toggle_timer"
         / "www"
         / "toggle-timer-card.js",
     ):
@@ -45,7 +45,7 @@ def test_built_frontend_assets_support_lovelace_fire_dom_event():
         REPO_ROOT / "dist" / "toggle-timer-card.js",
         REPO_ROOT
         / "custom_components"
-        / "switch_for_time"
+        / "toggle_timer"
         / "www"
         / "toggle-timer-card.js",
     ):

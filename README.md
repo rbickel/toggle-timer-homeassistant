@@ -1,4 +1,4 @@
-# Switch For Time Card
+# Toggle Timer Card
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -46,21 +46,21 @@ This repository provides both the frontend Lovelace card and the backend Home As
 5. Add this repository URL: `https://github.com/rbickel/toggle-timer-homeassistant`
 6. Select category: "Integration"
 7. Click "Add"
-8. Find "Switch For Time" in the integrations list and click "Download"
+8. Find "Toggle Timer" in the integrations list and click "Download"
 9. Restart Home Assistant
-10. **IMPORTANT:** Go to **Settings → Devices & Services → Add Integration** and search for "Switch For Time"
-11. **IMPORTANT:** Add the **Switch For Time** integration via the UI - this step is required for the card to work!
-12. **Frontend JavaScript registration:** After step 11, the integration auto-registers the card at `/hacsfiles/switch_for_time/toggle-timer-card.js`. No manual Lovelace resource is needed. If you want to double-check, open **Settings → Dashboards → Resources** and confirm a `module` resource exists with that URL (add it if it is missing).
+10. **IMPORTANT:** Go to **Settings → Devices & Services → Add Integration** and search for "Toggle Timer"
+11. **IMPORTANT:** Add the **Toggle Timer** integration via the UI - this step is required for the card to work!
+12. **Frontend JavaScript registration:** After step 11, the integration auto-registers the card at `/hacsfiles/toggle_timer/toggle-timer-card.js`. No manual Lovelace resource is needed. If you want to double-check, open **Settings → Dashboards → Resources** and confirm a `module` resource exists with that URL (add it if it is missing).
 
 **⚠️ Critical:** The Lovelace card will **only** be loaded after you configure the integration in step 10-11. Simply downloading via HACS is not enough - you **must** add the integration via **Settings → Devices & Services**. The Lovelace card is automatically registered when you configure the integration. You do **not** need to add this repository separately as a Frontend/Lovelace repository.
 
 After installation, you can add the card to your Lovelace dashboard. The card is available at:
 ```
-/hacsfiles/switch_for_time/toggle-timer-card.js
+/hacsfiles/toggle_timer/toggle-timer-card.js
 ```
 
 This provides:
-- **Backend**: The `switch_for_time.start` and `switch_for_time.cancel` services and `sensor.switch_for_time_state`
+- **Backend**: The `toggle_timer.start` and `toggle_timer.cancel` services and `sensor.toggle_timer_state`
 - **Frontend**: The `custom:toggle-timer-card` Lovelace card
 
 ### Manual Installation
@@ -68,10 +68,10 @@ This provides:
 #### Integration (Recommended)
 
 1. Download the latest release from [GitHub releases](https://github.com/rbickel/toggle-timer-homeassistant/releases)
-2. Extract the `custom_components/switch_for_time` folder to your Home Assistant `custom_components` directory
+2. Extract the `custom_components/toggle_timer` folder to your Home Assistant `custom_components` directory
 3. Restart Home Assistant
-4. Go to **Settings → Devices & Services → Add Integration** and add **Switch For Time**
-5. **Frontend JavaScript registration:** The integration will register `/hacsfiles/switch_for_time/toggle-timer-card.js` for you after step 4. Verify under **Settings → Dashboards → Resources** that a `module` resource with that URL exists (add it manually if it's missing).
+4. Go to **Settings → Devices & Services → Add Integration** and add **Toggle Timer**
+5. **Frontend JavaScript registration:** The integration will register `/hacsfiles/toggle_timer/toggle-timer-card.js` for you after step 4. Verify under **Settings → Dashboards → Resources** that a `module` resource with that URL exists (add it manually if it's missing).
 
 The integration includes the frontend card in its `www` directory and will automatically register it.
 
@@ -103,10 +103,10 @@ The recommended backend is the integration (installed via HACS or manually). How
 
 2. Create the packages directory if it doesn't exist:
    ```bash
-   mkdir -p <config>/packages/switch_for_time
+   mkdir -p <config>/packages/toggle_timer
    ```
 
-3. Copy `packages/switch_for_time/package.yaml` to `<config>/packages/switch_for_time/package.yaml`
+3. Copy `packages/toggle_timer/package.yaml` to `<config>/packages/toggle_timer/package.yaml`
 4. Restart Home Assistant
 
 ## 🎨 Configuration
@@ -238,29 +238,29 @@ The card works with the following entity domains:
 The backend package creates the following:
 
 ### Entities
-- `sensor.switch_for_time_state` - State JSON from integration backend
-- `input_text.switch_for_time_state` - State JSON from legacy package backend
-- `timer.switch_for_time_slot_1` through `timer.switch_for_time_slot_8` - Timer slots (legacy package backend)
+- `sensor.toggle_timer_state` - State JSON from integration backend
+- `input_text.toggle_timer_state` - State JSON from legacy package backend
+- `timer.toggle_timer_slot_1` through `timer.toggle_timer_slot_8` - Timer slots (legacy package backend)
 
 ### Services / Scripts
-- `switch_for_time.start` - Start a timed operation (integration backend)
-- `switch_for_time.cancel` - Cancel a timer (integration backend)
-- `script.switch_for_time` - Start a timed operation (legacy package backend)
-- `script.switch_for_time_cancel` - Cancel a timer (legacy package backend)
-- `script.switch_for_time_persist` - Persist state (legacy package backend)
-- `script.switch_for_time_remove_state` - Remove state (legacy package backend)
-- `script.switch_for_time_revert` - Revert entity (legacy package backend)
+- `toggle_timer.start` - Start a timed operation (integration backend)
+- `toggle_timer.cancel` - Cancel a timer (integration backend)
+- `script.toggle_timer` - Start a timed operation (legacy package backend)
+- `script.toggle_timer_cancel` - Cancel a timer (legacy package backend)
+- `script.toggle_timer_persist` - Persist state (legacy package backend)
+- `script.toggle_timer_remove_state` - Remove state (legacy package backend)
+- `script.toggle_timer_revert` - Revert entity (legacy package backend)
 
 ### Automations
-- `automation.switch_for_time_on_timer_finished` - Handle timer completion (legacy package backend)
-- `automation.switch_for_time_resume_on_restart` - Resume timers after restart (legacy package backend)
+- `automation.toggle_timer_on_timer_finished` - Handle timer completion (legacy package backend)
+- `automation.toggle_timer_resume_on_restart` - Resume timers after restart (legacy package backend)
 
 ### Increasing Timer Slots (legacy package backend)
 
 By default, you can have 8 concurrent timers. To increase this:
 
-1. Edit `packages/switch_for_time/package.yaml`
-2. Add more timer entities (e.g., `timer.switch_for_time_slot_9`)
+1. Edit `packages/toggle_timer/package.yaml`
+2. Add more timer entities (e.g., `timer.toggle_timer_slot_9`)
 3. Add corresponding triggers in the automation
 4. Restart Home Assistant
 
@@ -296,12 +296,12 @@ Set `tap_behavior: immediate` to skip the popup and use the first duration insta
    - Persists state to `input_text` (survives restarts)
    - Applies the action (on/off/toggle)
    - Starts the timer
-   - Fires `switch_for_time_started` event
+   - Fires `toggle_timer_started` event
 3. **Timer finishes** → Automation triggers:
    - Reads persisted state
    - Applies revert action
    - Cleans up state
-   - Fires `switch_for_time_finished` event
+   - Fires `toggle_timer_finished` event
 4. **Home Assistant restarts** → Automation resumes:
    - Reads all active timers from `input_text`
    - Restarts timers with remaining time
@@ -314,14 +314,14 @@ Set `tap_behavior: immediate` to skip the popup and use the first duration insta
 This error means the Lovelace card hasn't been loaded by Home Assistant. This typically happens when:
 
 1. **Integration Not Configured** (Most Common)
-   - The frontend card is **only** loaded when the **Switch For Time** integration is properly set up
-   - **Solution**: Go to **Settings → Devices & Services → Add Integration** and search for "Switch For Time"
+   - The frontend card is **only** loaded when the **Toggle Timer** integration is properly set up
+   - **Solution**: Go to **Settings → Devices & Services → Add Integration** and search for "Toggle Timer"
    - Add the integration - it will automatically register the custom card
    - Refresh your browser after adding the integration
 
 2. **Integration Installed but Not Configured**
    - You downloaded the integration via HACS but didn't add it in Settings
-   - **Solution**: Even after HACS download, you must go to **Settings → Devices & Services** and add the "Switch For Time" integration
+   - **Solution**: Even after HACS download, you must go to **Settings → Devices & Services** and add the "Toggle Timer" integration
    - Just installing via HACS is not enough - you must configure it!
 
 3. **Browser Cache**
@@ -330,19 +330,19 @@ This error means the Lovelace card hasn't been loaded by Home Assistant. This ty
 
 4. **Manual Installation Issue**
    - If you installed manually, verify:
-     - `custom_components/switch_for_time/www/toggle-timer-card.js` exists
+     - `custom_components/toggle_timer/www/toggle-timer-card.js` exists
      - The integration is added via **Settings → Devices & Services**
      - Home Assistant was restarted after installation
 
 ### Card not showing up
 - Clear browser cache (Ctrl+Shift+R or Cmd+Shift+R)
-- Check that `custom_components/switch_for_time/www/toggle-timer-card.js` exists
+- Check that `custom_components/toggle_timer/www/toggle-timer-card.js` exists
 - Verify the integration is configured in **Settings → Devices & Services**
 - Check browser console for JavaScript errors (F12 → Console tab)
 
 ### Timer not starting
 - Check that the backend integration is installed and configured
-- Verify `sensor.switch_for_time_state` exists (integration backend) OR `input_text.switch_for_time_state` exists (legacy package backend)
+- Verify `sensor.toggle_timer_state` exists (integration backend) OR `input_text.toggle_timer_state` exists (legacy package backend)
 - Check Home Assistant logs for errors: **Settings → System → Logs**
 - Ensure the entity you're controlling exists and is accessible
 
@@ -353,8 +353,8 @@ This error means the Lovelace card hasn't been loaded by Home Assistant. This ty
 - Note: Integration backend automatically manages timer slots
 
 ### Timer doesn't survive restart
-- **Integration backend**: Timers persist automatically via `sensor.switch_for_time_state`
-- **Legacy package backend**: Verify `input_text.switch_for_time_state` has `restore: true` (default)
+- **Integration backend**: Timers persist automatically via `sensor.toggle_timer_state`
+- **Legacy package backend**: Verify `input_text.toggle_timer_state` has `restore: true` (default)
 - Check the resume automation is enabled (legacy package backend)
 
 ### Still having issues?
@@ -389,7 +389,7 @@ The built file will be in `dist/toggle-timer-card.js`.
 ```
 toggle-timer-card/
 ├── custom_components/
-│   └── switch_for_time/            # Optional backend integration (no YAML package setup)
+│   └── toggle_timer/            # Optional backend integration (no YAML package setup)
 ├── src/
 │   ├── toggle-timer-card.ts    # Main card component
 │   ├── editor.ts                   # Visual editor
@@ -398,7 +398,7 @@ toggle-timer-card/
 │       ├── en.json                 # English translations
 │       └── fr.json                 # French translations
 ├── packages/
-│   └── switch_for_time/
+│   └── toggle_timer/
 │       └── package.yaml            # Backend HA package
 ├── dist/
 │   └── toggle-timer-card.js     # Built card

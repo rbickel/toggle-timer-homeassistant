@@ -1,4 +1,4 @@
-# Switch For Time Card
+# Toggle Timer Card
 
 A Home Assistant custom Lovelace card that lets you tap any entity, pick a duration from quick-pick buttons, and toggle that entity (on/off/toggle) for the chosen duration before automatically reverting it.
 

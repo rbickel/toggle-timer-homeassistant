@@ -13,7 +13,7 @@ export default {
       sourcemap: false,
     },
     {
-      file: 'custom_components/switch_for_time/www/toggle-timer-card.js',
+      file: 'custom_components/toggle_timer/www/toggle-timer-card.js',
       format: 'es',
       sourcemap: false,
     },

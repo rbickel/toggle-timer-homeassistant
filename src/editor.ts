@@ -1,15 +1,15 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type {
-  SwitchForTimeCardConfig,
+  ToggleTimerCardConfig,
   HomeAssistant,
   LovelaceCardEditor,
 } from './types';
 
 @customElement('toggle-timer-card-editor')
-export class SwitchForTimeCardEditor extends LitElement implements LovelaceCardEditor {
+export class ToggleTimerCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @state() private _config!: SwitchForTimeCardConfig;
+  @state() private _config!: ToggleTimerCardConfig;
   @state() private _durationsError?: string;
   private readonly _allowedConfigKeys = new Set([
     'entity',
@@ -27,7 +27,7 @@ export class SwitchForTimeCardEditor extends LitElement implements LovelaceCardE
     'theme.button_format',
   ]);
 
-  public setConfig(config: SwitchForTimeCardConfig): void {
+  public setConfig(config: ToggleTimerCardConfig): void {
     this._config = config;
   }
 

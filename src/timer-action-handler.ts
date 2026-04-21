@@ -45,14 +45,14 @@ console.info(
 );
 
 @customElement('toggle-timer-action-handler')
-export class SwitchForTimeActionHandler extends LitElement {
+export class ToggleTimerActionHandler extends LitElement {
   @state() private _hass?: HomeAssistant;
   @state() private _config?: TimerPopupConfig;
   private _registered = false;
 
   private readonly _handleTimerActionEvent = (event: Event): void => {
     console.info(
-      'Switch For Time: Received event',
+      'Toggle Timer: Received event',
       event.type,
       'with detail:',
       (event as CustomEvent).detail
@@ -61,7 +61,7 @@ export class SwitchForTimeActionHandler extends LitElement {
     const actionRequest = this._extractActionRequest(event);
     if (!actionRequest) {
       console.warn(
-        'Switch For Time: Failed to extract action request from event',
+        'Toggle Timer: Failed to extract action request from event',
         event.type
       );
       return;
@@ -85,7 +85,7 @@ export class SwitchForTimeActionHandler extends LitElement {
     }
 
     console.info(
-      'Switch For Time: Opening popup for entity',
+      'Toggle Timer: Opening popup for entity',
       config.entity
     );
     void window.switchForTimeAction?.(hass, config);
@@ -151,7 +151,7 @@ export class SwitchForTimeActionHandler extends LitElement {
     );
     document.addEventListener('ll-custom', this._handleTimerActionEvent, true);
 
-    console.info('Switch For Time: Global timer action handler registered');
+    console.info('Toggle Timer: Global timer action handler registered');
   }
 
   private _extractActionRequest(
@@ -290,12 +290,12 @@ export class SwitchForTimeActionHandler extends LitElement {
 // Auto-register the handler on load
 function autoRegisterHandler() {
   if (!document.querySelector('toggle-timer-action-handler')) {
-    console.info('Switch For Time: Creating action handler element');
+    console.info('Toggle Timer: Creating action handler element');
     const handler = document.createElement('toggle-timer-action-handler');
     document.body.appendChild(handler);
-    console.info('Switch For Time: Action handler element added to DOM');
+    console.info('Toggle Timer: Action handler element added to DOM');
   } else {
-    console.info('Switch For Time: Action handler already exists in DOM');
+    console.info('Toggle Timer: Action handler already exists in DOM');
   }
 }
 
