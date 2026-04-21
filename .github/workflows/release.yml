@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  # Separate PR trigger keeps this release pipeline validated before merge.
   pull_request:
     branches:
       - main
