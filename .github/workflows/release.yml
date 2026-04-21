@@ -4,13 +4,18 @@ on:
   push:
     branches:
       - main
+  # Separate PR trigger keeps this release pipeline validated before merge.
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
 
 jobs:
   release:
-    if: ${{ !contains(github.event.head_commit.message, '[skip release]') }}
+    # PRs should always validate this workflow; main pushes respect [skip release].
+    if: ${{ github.event_name == 'pull_request' || !contains(github.event.head_commit.message, '[skip release]') }}
     runs-on: ubuntu-latest
     concurrency:
       group: release-main
@@ -99,6 +104,7 @@ jobs:
           ignore: brands description topics
 
       - name: Commit and tag release
+        if: ${{ github.event_name == 'push' }}
         id: release_commit
         env:
           VERSION: ${{ steps.bump.outputs.version }}
@@ -120,8 +126,11 @@ jobs:
           if ! git push --atomic origin main "v${VERSION}"; then
             git fetch origin main --tags
             if git rev-parse -q --verify "refs/tags/v${VERSION}" >/dev/null; then
+              # Another release run already published this version; don't fail this duplicate run.
               echo "Release tag v${VERSION} already exists on origin."
-              echo "Check existing releases before re-running this workflow."
+              echo "This version was released by another run; skipping duplicate release."
+              echo "released=false" >> "$GITHUB_OUTPUT"
+              exit 0
             elif [ "$(git rev-parse HEAD~1)" != "$(git rev-parse origin/main)" ]; then
               echo "origin/main advanced during release."
               echo "Re-run this workflow from the latest main commit."
@@ -133,7 +142,7 @@ jobs:
           echo "released=true" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub release
-        if: ${{ steps.release_commit.outputs.released == 'true' }}
+        if: ${{ github.event_name == 'push' && steps.release_commit.outputs.released == 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.bump.outputs.version }}
