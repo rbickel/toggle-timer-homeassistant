@@ -26,6 +26,15 @@ type LovelaceCustomEventDetail = {
   detail?: TimerActionRequestDetail;
 };
 
+type HassCarrier = {
+  hass?: HomeAssistant;
+};
+
+type EventNodeWithHass = EventTarget &
+  HassCarrier & {
+    getRootNode?: () => Node;
+  };
+
 const VALID_ACTIONS = new Set(['on', 'off', 'toggle']);
 const VALID_REVERT_STATES = new Set(['previous', 'on', 'off', 'none']);
 
@@ -259,22 +268,25 @@ export class SwitchForTimeActionHandler extends LitElement {
         ? ((event as any).composedPath() as EventTarget[])
         : [];
     for (const node of path) {
-      const hass = (node as any)?.hass;
+      const eventNode = node as EventNodeWithHass;
+      const hass = eventNode.hass;
       if (hass) {
-        return hass as HomeAssistant;
+        return hass;
       }
 
       const rootNode =
-        typeof (node as any)?.getRootNode === 'function'
-          ? (node as any).getRootNode()
+        typeof eventNode.getRootNode === 'function'
+          ? eventNode.getRootNode()
           : undefined;
-      const rootHass = (rootNode as any)?.hass;
+      const rootHass = (rootNode as HassCarrier | undefined)?.hass;
       if (rootHass) {
-        return rootHass as HomeAssistant;
+        return rootHass;
       }
     }
 
-    const root = document.querySelector('home-assistant') as any;
+    const root = document.querySelector('home-assistant') as
+      | (Element & HassCarrier)
+      | null;
     if (root?.hass) {
       return root.hass as HomeAssistant;
     }
@@ -302,13 +314,15 @@ export class SwitchForTimeActionHandler extends LitElement {
     return undefined;
   }
 
-  private _resolveHassFromElement(element: any): HomeAssistant | undefined {
-    if (!element || typeof element !== 'object') {
+  private _resolveHassFromElement(
+    element: (Element & HassCarrier) | null | undefined
+  ): HomeAssistant | undefined {
+    if (!element) {
       return undefined;
     }
 
     if (element.hass) {
-      return element.hass as HomeAssistant;
+      return element.hass;
     }
 
     const shadowRoot = element.shadowRoot as ShadowRoot | undefined;
@@ -318,6 +332,7 @@ export class SwitchForTimeActionHandler extends LitElement {
 
     const nestedSelectors = [
       'home-assistant-main',
+      // Descendant selectors target both common HA panel host paths.
       'ha-drawer partial-panel-resolver',
       'app-drawer-layout partial-panel-resolver',
       'partial-panel-resolver',
@@ -326,7 +341,9 @@ export class SwitchForTimeActionHandler extends LitElement {
       'hc-main',
     ];
     for (const nestedSelector of nestedSelectors) {
-      const nestedElement = shadowRoot.querySelector(nestedSelector) as any;
+      const nestedElement = shadowRoot.querySelector(nestedSelector) as
+        | (Element & HassCarrier)
+        | null;
       const hass = this._resolveHassFromElement(nestedElement);
       if (hass) {
         return hass;
